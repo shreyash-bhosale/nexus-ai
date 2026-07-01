@@ -1,20 +1,23 @@
 """
-Main entry point for NEXUS AI.
+NEXUS AI Entry Point
 """
 
 from nexus_ai.core.logger import logger
+from nexus_ai.core.paths import PROCESSED_DIR
 from nexus_ai.features.capture.service import ScreenCaptureService
 from nexus_ai.features.vision.service import VisionService
 
 
 def main() -> None:
-    """Run the NEXUS AI application."""
+    """
+    Main application entry point.
+    """
 
     logger.info("=" * 60)
     logger.info("Starting NEXUS AI")
     logger.info("Version: 0.1.0")
 
-    # Capture a fresh screenshot
+    # Capture screen
     capture_service = ScreenCaptureService()
     capture = capture_service.capture_screen()
 
@@ -22,13 +25,38 @@ def main() -> None:
     logger.info("Path: {}", capture.image_path)
     logger.info("Resolution: {} x {}", capture.width, capture.height)
 
-    # Load the captured screenshot
+    # Load image
     image = VisionService.load(capture.image_path)
 
     logger.info("Image loaded successfully.")
     logger.info("Image Resolution: {} x {}", image.width, image.height)
     logger.info("Channels: {}", image.channels)
 
+    # Convert to grayscale
+    grayscale = VisionService.grayscale(image)
+
+    grayscale_path = PROCESSED_DIR / "grayscale.png"
+    VisionService.save(grayscale, grayscale_path)
+
+    logger.info("Grayscale image saved: {}", grayscale_path)
+
+    # Denoise
+    denoised = VisionService.denoise(grayscale)
+
+    denoised_path = PROCESSED_DIR / "denoised.png"
+    VisionService.save(denoised, denoised_path)
+
+    logger.info("Denoised image saved: {}", denoised_path)
+
+    # Enhance contrast
+    enhanced = VisionService.enhance_contrast(denoised)
+
+    enhanced_path = PROCESSED_DIR / "enhanced.png"
+    VisionService.save(enhanced, enhanced_path)
+
+    logger.info("Enhanced image saved: {}", enhanced_path)
+
+    logger.info("Vision preprocessing pipeline completed successfully.")
     logger.info("NEXUS AI is ready.")
     logger.info("=" * 60)
 

@@ -1,47 +1,32 @@
 from pathlib import Path
 
-# ----------------------------
-# Project Root
-# ----------------------------
-
+# Project root
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
-# ----------------------------
-# Main Directories
-# ----------------------------
-
-SRC_DIR = PROJECT_ROOT / "src"
-
-ASSETS_DIR = PROJECT_ROOT / "assets"
-
+# Data directory
 DATA_DIR = PROJECT_ROOT / "data"
+DATA_DIR.mkdir(exist_ok=True)
 
-LOGS_DIR = PROJECT_ROOT / "logs"
-
-DOCS_DIR = PROJECT_ROOT / "docs"
-
-# ----------------------------
-# Runtime Directories
-# ----------------------------
-
+# Screenshots
 SCREENSHOTS_DIR = DATA_DIR / "screenshots"
+SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
 
-CACHE_DIR = DATA_DIR / "cache"
+# Processed images
+PROCESSED_DIR = DATA_DIR / "processed"
+PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
+# Memory
 MEMORY_DIR = DATA_DIR / "memory"
+MEMORY_DIR.mkdir(parents=True, exist_ok=True)
 
+# Cache
+CACHE_DIR = DATA_DIR / "cache"
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+# Exports
 EXPORTS_DIR = DATA_DIR / "exports"
+EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
-# ----------------------------
-# Ensure directories exist
-# ----------------------------
-
-for directory in (
-    DATA_DIR,
-    SCREENSHOTS_DIR,
-    CACHE_DIR,
-    MEMORY_DIR,
-    EXPORTS_DIR,
-    LOGS_DIR,
-):
-    directory.mkdir(parents=True, exist_ok=True)
+# Logs
+LOGS_DIR = PROJECT_ROOT / "logs"
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
