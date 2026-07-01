@@ -1,5 +1,5 @@
 """
-OCR service.
+OCR Service
 """
 
 from pathlib import Path
@@ -11,34 +11,23 @@ from nexus_ai.features.ocr.models import OCRResult
 
 
 class OCRService:
-    """
-    Coordinates OCR operations.
-    """
 
-    def __init__(self) -> None:
-        """
-        Initialize the OCR service.
-        """
+    def __init__(self):
+
+        logger.info("Loading PaddleOCR...")
 
         self.engine = OCREngine()
 
+        logger.success("PaddleOCR Loaded.")
+
     def extract(self, image_path: Path) -> OCRResult:
-        """
-        Extract text from an image.
 
-        Args:
-            image_path: Image path.
-
-        Returns:
-            OCRResult
-        """
-
-        logger.info("Running OCR on {}", image_path)
+        logger.info("Running OCR...")
 
         result = self.engine.extract_text(image_path)
 
-        logger.info(
-            "OCR complete (confidence {:.2f})",
+        logger.success(
+            "OCR Finished (Confidence {:.2f})",
             result.confidence,
         )
 

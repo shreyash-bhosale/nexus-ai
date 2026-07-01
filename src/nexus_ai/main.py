@@ -14,80 +14,121 @@ def main() -> None:
     Main application entry point.
     """
 
-    logger.info("=" * 60)
-    logger.info("Starting NEXUS AI")
-    logger.info("Version: 0.1.0")
+    logger.info("=" * 70)
+    logger.info("🚀 Starting NEXUS AI")
+    logger.info("Version : 0.1.0")
+    logger.info("=" * 70)
 
-    # ---------------------------------------------------------
-    # Capture Screen
-    # ---------------------------------------------------------
+    # ----------------------------------------------------------
+    # Capture Screenshot
+    # ----------------------------------------------------------
 
     capture_service = ScreenCaptureService()
     capture = capture_service.capture_screen()
 
-    logger.info("Screenshot captured successfully.")
-    logger.info("Path: {}", capture.image_path)
-    logger.info("Resolution: {} x {}", capture.width, capture.height)
+    logger.success("Screenshot captured successfully.")
+    logger.info("Path       : {}", capture.image_path)
+    logger.info("Resolution : {} x {}", capture.width, capture.height)
 
-    # ---------------------------------------------------------
+    # ----------------------------------------------------------
     # Load Image
-    # ---------------------------------------------------------
+    # ----------------------------------------------------------
 
     image = VisionService.load(capture.image_path)
 
-    logger.info("Image loaded successfully.")
-    logger.info("Image Resolution: {} x {}", image.width, image.height)
-    logger.info("Channels: {}", image.channels)
+    logger.success("Image loaded.")
+    logger.info("Resolution : {} x {}", image.width, image.height)
 
-    # ---------------------------------------------------------
-    # Vision Pipeline
-    # ---------------------------------------------------------
+    # ----------------------------------------------------------
+    # Resize
+    # ----------------------------------------------------------
 
-    grayscale = VisionService.grayscale(image)
+    resized = VisionService.resize(image)
+
+    resized_path = PROCESSED_DIR / "resized.png"
+
+    VisionService.save(resized, resized_path)
+
+    logger.success("Saved resized image.")
+
+    # ----------------------------------------------------------
+    # Grayscale
+    # ----------------------------------------------------------
+
+    grayscale = VisionService.grayscale(resized)
 
     grayscale_path = PROCESSED_DIR / "grayscale.png"
+
     VisionService.save(grayscale, grayscale_path)
 
-    logger.info("Grayscale image saved: {}", grayscale_path)
+    logger.success("Saved grayscale image.")
+
+    # ----------------------------------------------------------
+    # Denoise
+    # ----------------------------------------------------------
 
     denoised = VisionService.denoise(grayscale)
 
     denoised_path = PROCESSED_DIR / "denoised.png"
+
     VisionService.save(denoised, denoised_path)
 
-    logger.info("Denoised image saved: {}", denoised_path)
+    logger.success("Saved denoised image.")
+
+    # ----------------------------------------------------------
+    # Contrast Enhancement
+    # ----------------------------------------------------------
 
     enhanced = VisionService.enhance_contrast(denoised)
 
     enhanced_path = PROCESSED_DIR / "enhanced.png"
+
     VisionService.save(enhanced, enhanced_path)
 
-    logger.info("Enhanced image saved: {}", enhanced_path)
+    logger.success("Saved enhanced image.")
 
-    logger.info("Vision preprocessing pipeline completed successfully.")
+    logger.info("=" * 70)
+    logger.info("Vision preprocessing completed.")
+    logger.info("=" * 70)
 
-    # ---------------------------------------------------------
-    # OCR Pipeline
-    # ---------------------------------------------------------
+    # ----------------------------------------------------------
+    # OCR
+    # ----------------------------------------------------------
 
     ocr_service = OCRService()
 
-    ocr_result = ocr_service.extract(enhanced_path)
+    result = ocr_service.extract(enhanced_path)
 
-    logger.info("=" * 60)
-    logger.info("OCR RESULTS")
-    logger.info("=" * 60)
-    logger.info("Confidence: {:.2f}", ocr_result.confidence)
-    logger.info("Extracted Text:")
-    logger.info(ocr_result.text)
-    logger.info("=" * 60)
+    logger.info("")
+    logger.info("=" * 70)
+    logger.info("📄 OCR RESULT")
+    logger.info("=" * 70)
 
-    # ---------------------------------------------------------
-    # Finish
-    # ---------------------------------------------------------
+    logger.info("Confidence : {:.2f}", result.confidence)
+    logger.info("Lines      : {}", result.line_count)
+    logger.info("Words      : {}", result.word_count)
 
-    logger.info("NEXUS AI is ready.")
-    logger.info("=" * 60)
+    logger.info("-" * 70)
+
+    if result.text:
+
+        print()
+        print("=" * 70)
+        print("EXTRACTED TEXT")
+        print("=" * 70)
+        print()
+        print(result.text)
+        print()
+        print("=" * 70)
+
+    else:
+
+        logger.warning("No text detected.")
+
+    logger.info("")
+    logger.info("=" * 70)
+    logger.success("NEXUS AI Finished Successfully.")
+    logger.info("=" * 70)
 
 
 if __name__ == "__main__":

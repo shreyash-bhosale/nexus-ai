@@ -5,6 +5,7 @@ Image processing utilities.
 from pathlib import Path
 
 import cv2
+import numpy as np
 
 from nexus_ai.features.vision.exceptions import ImageLoadError
 from nexus_ai.features.vision.models import LoadedImage
@@ -19,15 +20,6 @@ class ImageProcessor:
     def load_image(path: Path) -> LoadedImage:
         """
         Load an image from disk.
-
-        Args:
-            path: Path to the image.
-
-        Returns:
-            LoadedImage
-
-        Raises:
-            ImageLoadError: If the image cannot be loaded.
         """
 
         if not path.exists():
@@ -49,15 +41,35 @@ class ImageProcessor:
         )
 
     @staticmethod
+    def resize(image: LoadedImage, scale: float = 2.0) -> LoadedImage:
+        """
+        Resize image before OCR.
+        """
+
+        resized = cv2.resize(
+            image.image,
+            None,
+            fx=scale,
+            fy=scale,
+            interpolation=cv2.INTER_CUBIC,
+        )
+
+        height, width = resized.shape[:2]
+
+        channels = 1 if len(resized.shape) == 2 else resized.shape[2]
+
+        return LoadedImage(
+            path=image.path,
+            width=width,
+            height=height,
+            channels=channels,
+            image=resized,
+        )
+
+    @staticmethod
     def to_grayscale(image: LoadedImage) -> LoadedImage:
         """
         Convert an image to grayscale.
-
-        Args:
-            image: Loaded image.
-
-        Returns:
-            LoadedImage
         """
 
         gray = cv2.cvtColor(image.image, cv2.COLOR_BGR2GRAY)
@@ -74,26 +86,15 @@ class ImageProcessor:
     def denoise(image: LoadedImage) -> LoadedImage:
         """
         Remove noise from an image.
-
-        Args:
-            image: Loaded image.
-
-        Returns:
-            LoadedImage
         """
 
-        if image.channels == 1:
-            denoised = cv2.fastNlMeansDenoising(image.image)
-            channels = 1
-        else:
-            denoised = cv2.fastNlMeansDenoisingColored(image.image)
-            channels = image.channels
+        denoised = cv2.fastNlMeansDenoising(image.image)
 
         return LoadedImage(
             path=image.path,
             width=image.width,
             height=image.height,
-            channels=channels,
+            channels=1,
             image=denoised,
         )
 
@@ -101,46 +102,73 @@ class ImageProcessor:
     def enhance_contrast(image: LoadedImage) -> LoadedImage:
         """
         Enhance image contrast using histogram equalization.
-
-        Args:
-            image: Loaded image.
-
-        Returns:
-            LoadedImage
         """
 
-        if image.channels == 1:
-            enhanced = cv2.equalizeHist(image.image)
-            channels = 1
-        else:
-            lab = cv2.cvtColor(image.image, cv2.COLOR_BGR2LAB)
-            l, a, b = cv2.split(lab)
-
-            l = cv2.equalizeHist(l)
-
-            lab = cv2.merge((l, a, b))
-            enhanced = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
-            channels = 3
+        enhanced = cv2.equalizeHist(image.image)
 
         return LoadedImage(
             path=image.path,
             width=image.width,
             height=image.height,
-            channels=channels,
+            channels=1,
             image=enhanced,
+        )
+
+    @staticmethod
+    def adaptive_threshold(image: LoadedImage) -> LoadedImage:
+        """
+        Convert image into a binary image.
+        """
+
+        threshold = cv2.adaptiveThreshold(
+            image.image,
+            255,
+            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+            cv2.THRESH_BINARY,
+            31,
+            11,
+        )
+
+        return LoadedImage(
+            path=image.path,
+            width=image.width,
+            height=image.height,
+            channels=1,
+            image=threshold,
+        )
+
+    @staticmethod
+    def sharpen(image: LoadedImage) -> LoadedImage:
+        """
+        Sharpen image.
+        """
+
+        kernel = np.array(
+            [
+                [0, -1, 0],
+                [-1, 5, -1],
+                [0, -1, 0],
+            ]
+        )
+
+        sharpened = cv2.filter2D(
+            image.image,
+            -1,
+            kernel,
+        )
+
+        return LoadedImage(
+            path=image.path,
+            width=image.width,
+            height=image.height,
+            channels=1,
+            image=sharpened,
         )
 
     @staticmethod
     def save_image(image: LoadedImage, output_path: Path) -> None:
         """
         Save an image to disk.
-
-        Args:
-            image: Loaded image.
-            output_path: Destination file path.
-
-        Raises:
-            ImageLoadError: If saving fails.
         """
 
         output_path.parent.mkdir(parents=True, exist_ok=True)

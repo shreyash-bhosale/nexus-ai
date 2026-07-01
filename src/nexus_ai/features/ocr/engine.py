@@ -1,78 +1,92 @@
 """
-OCR engine implementation.
+OCR Engine using PaddleOCR
 """
 
 from pathlib import Path
 
-import easyocr
+from paddleocr import PaddleOCR
 
-from nexus_ai.features.ocr.exceptions import (
-    OCRInitializationError,
-    OCRProcessingError,
-)
 from nexus_ai.features.ocr.models import OCRResult
 
 
 class OCREngine:
     """
-    Wrapper around the EasyOCR engine.
+    PaddleOCR wrapper.
     """
 
-    def __init__(self, languages: list[str] | None = None) -> None:
-        """
-        Initialize the OCR engine.
+    def __init__(self) -> None:
 
-        Args:
-            languages: List of language codes.
-
-        Raises:
-            OCRInitializationError
-        """
-
-        if languages is None:
-            languages = ["en"]
-
-        try:
-            self._reader = easyocr.Reader(languages)
-        except Exception as exc:
-            raise OCRInitializationError(str(exc)) from exc
+        self.reader = PaddleOCR(
+            lang="en",
+            use_textline_orientation=True,
+        )
 
     def extract_text(self, image_path: Path) -> OCRResult:
-        """
-        Extract text from an image.
 
-        Args:
-            image_path: Path to the image.
+        result = self.reader.predict(str(image_path))
 
-        Returns:
-            OCRResult
-
-        Raises:
-            OCRProcessingError
-        """
-
-        try:
-            results = self._reader.readtext(str(image_path))
-
-            if not results:
-                return OCRResult(
-                    image_path=image_path,
-                    text="",
-                    confidence=0.0,
-                )
-
-            text = " ".join(item[1] for item in results)
-
-            confidence = (
-                sum(item[2] for item in results)
-                / len(results)
-            )
-
+        if not result:
             return OCRResult(
                 image_path=image_path,
-                text=text,
-                confidence=confidence,
+                text="",
+                confidence=0.0,
+                line_count=0,
+                word_count=0,
             )
 
-        except Exception as exc:
-            raise OCRProcessingError(str(exc)) from exc
+        lines = []
+        confidences = []
+
+        for page in result:
+
+            # PaddleOCR v3 Page object
+            if hasattr(page, "rec_texts"):
+
+                texts = page.rec_texts
+                scores = page.rec_scores
+                boxes = page.rec_boxes
+
+            # Fallback
+            else:
+
+                texts = page.get("rec_texts", [])
+                scores = page.get("rec_scores", [])
+                boxes = page.get("rec_boxes", [])
+
+            combined = list(zip(boxes, texts, scores))
+
+            combined.sort(
+                key=lambda item: (
+                    item[0][1],   # y
+                    item[0][0],   # x
+                )
+            )
+
+            for _, text, score in combined:
+
+                text = text.strip()
+
+                if len(text) < 2:
+                    continue
+
+                if score < 0.50:
+                    continue
+
+                lines.append(text)
+                confidences.append(score)
+
+        final_text = "\n".join(lines)
+
+        confidence = (
+            sum(confidences) / len(confidences)
+            if confidences
+            else 0.0
+        )
+
+        return OCRResult(
+            image_path=image_path,
+            text=final_text,
+            confidence=confidence,
+            line_count=len(lines),
+            word_count=len(final_text.split()),
+        )
